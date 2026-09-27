@@ -21,8 +21,6 @@ def init_state():
         st.session_state.profile = dict(DEFAULT_PROFILE)
     if "history" not in st.session_state:
         st.session_state.history = []
-
-
 def default_songs():
     """Return a default list of songs."""
     return [
@@ -214,11 +212,6 @@ def profile_sidebar():
         "Favorite genre",
         options=["rock", "lofi", "pop", "jazz", "electronic", "ambient", "other"],
         index=0,
-    )
-
-    profile["include_mixed"] = st.sidebar.checkbox(
-        "Include Mixed playlist in views",
-        value=bool(profile.get("include_mixed", True)),
     )
 
     st.sidebar.write("Current profile:", profile["name"])
