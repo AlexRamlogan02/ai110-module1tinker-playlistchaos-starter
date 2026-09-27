@@ -48,7 +48,7 @@ Location: [playlist_logic.py](playlist_logic.py#L192-L196)
 
 ### Artist search failed for partial queries (fixed)
 
-The search condition checks whether the full stored artist name is contained in the query. Searching for `laufey` will not match `laufey feat. ...` or other longer values as users would expect; the predicate should normally check whether the query is contained in the stored value.
+The search condition checks whether the full stored artist name is contained in the query. Searching for `laufey` will not match `lau` or other longer values as users would expect; the predicate should normally check whether the query is contained in the stored value.
 
 Location: [playlist_logic.py](playlist_logic.py#L157-L174)
 

@@ -21,6 +21,32 @@ def init_state():
         st.session_state.profile = dict(DEFAULT_PROFILE)
     if "history" not in st.session_state:
         st.session_state.history = []
+
+
+def cancel_data_confirmations():
+    """Close pending destructive-action confirmations."""
+    st.session_state.reset_pending = False
+    st.session_state.history_clear_pending = False
+
+
+def request_reset_confirmation():
+    """Open reset confirmation only when custom songs exist."""
+    if st.session_state.songs == default_songs():
+        st.session_state.reset_notice = "Songs are already at the default playlist."
+        return
+    st.session_state.reset_pending = True
+    st.session_state.history_clear_pending = False
+
+
+def request_history_confirmation():
+    """Open history confirmation only when picks exist."""
+    if not st.session_state.history:
+        st.session_state.history_notice = "There is no history to clear."
+        return
+    st.session_state.history_clear_pending = True
+    st.session_state.reset_pending = False
+
+
 def default_songs():
     """Return a default list of songs."""
     return [
@@ -230,7 +256,7 @@ def add_song_sidebar():
     energy = st.sidebar.slider("Energy", min_value=1, max_value=10, value=5)
     tags_text = st.sidebar.text_input("Tags (comma separated)")
 
-    if st.sidebar.button("Add to playlist"):
+    if st.sidebar.button("Add to playlist", on_click=cancel_data_confirmations):
         raw_tags = [t.strip() for t in tags_text.split(",")]
         tags = [t for t in raw_tags if t]
 
@@ -296,7 +322,7 @@ def lucky_section(playlists):
         index=0,
     )
 
-    if st.button("Feeling lucky"):
+    if st.button("Feeling lucky", on_click=cancel_data_confirmations):
         pick = lucky_pick(playlists, mode=mode)
         if pick is None:
             st.warning("No songs available for this mode.")
@@ -361,10 +387,58 @@ def history_section():
 def clear_controls():
     """Render a small section for clearing data."""
     st.sidebar.header("Manage data")
-    if st.sidebar.button("Reset songs to default"):
-        st.session_state.songs = default_songs()
-    if st.sidebar.button("Clear history"):
-        st.session_state.history = []
+    reset_message = st.session_state.pop("reset_message", None)
+    history_message = st.session_state.pop("history_message", None)
+    if reset_message:
+        st.sidebar.success(reset_message)
+    if history_message:
+        st.sidebar.success(history_message)
+
+    reset_notice = st.session_state.pop("reset_notice", None)
+    if reset_notice:
+        st.sidebar.info(reset_notice)
+    st.sidebar.button(
+        "Reset songs to default",
+        on_click=request_reset_confirmation,
+    )
+
+    if st.session_state.get("reset_pending", False):
+        st.sidebar.warning("Resetting songs removes all songs you added.")
+        with st.sidebar.form("confirm_reset_form"):
+            confirm_reset = st.checkbox("I understand and want to reset songs")
+            confirm_reset_submit = st.form_submit_button("Confirm reset")
+        if confirm_reset_submit:
+            if confirm_reset:
+                st.session_state.songs = default_songs()
+                st.session_state.reset_pending = False
+                st.session_state.reset_message = "Songs reset to the default playlist."
+                st.rerun()
+            else:
+                st.sidebar.error("Check the confirmation before resetting songs.")
+
+    history_notice = st.session_state.pop("history_notice", None)
+    if history_notice:
+        st.sidebar.info(history_notice)
+    st.sidebar.button(
+        "Clear history",
+        on_click=request_history_confirmation,
+    )
+
+    if st.session_state.get("history_clear_pending", False):
+        st.sidebar.warning("Clearing history removes all lucky-pick history.")
+        with st.sidebar.form("confirm_history_form"):
+            confirm_clear_history = st.checkbox(
+                "I understand and want to clear history"
+            )
+            confirm_history_submit = st.form_submit_button("Confirm clear history")
+        if confirm_history_submit:
+            if confirm_clear_history:
+                st.session_state.history = []
+                st.session_state.history_clear_pending = False
+                st.session_state.history_message = "Lucky-pick history cleared."
+                st.rerun()
+            else:
+                st.sidebar.error("Check the confirmation before clearing history.")
 
 
 def main():
